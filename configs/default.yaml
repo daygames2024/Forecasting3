@@ -1,0 +1,28 @@
+
+data:
+  input_path: "data/sales_daily.xlsx"   # or .csv
+  sheet_name: null                      # set e.g., "Sheet1" for Excel
+  date_format: "%Y-%m-%d"               # daily date format
+  input_freq: "D"
+  target_freq: "Q-DEC"                  # calendar quarters (Jan–Mar, Apr–Jun, Jul–Sep, Oct–Dec)
+  part_col: "Part_number"
+  value_col: "Value"
+  agg: "sum"                            # sum daily demand per quarter
+  fill_missing_days: "zero"             # zero-fill missing days to ensure consistent resample
+
+modeling:
+  horizon: 6
+  seasonal_periods: 4                   # quarterly seasonality
+  candidates: ["naive", "mean", "holt_winters", "auto_arima"]
+  cv:
+    folds: 3
+    min_history_quarters: 8
+
+output:
+  dir: "outputs"
+  save_plots: true
+  intervals: [0.2, 0.05]                # 80% and 95% bands (basic residual-based)
+  include_recent_stats: true
+
+logging:
+  level: "INFO"

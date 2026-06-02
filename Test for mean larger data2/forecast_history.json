@@ -1,0 +1,50 @@
+[
+  {
+    "type": "Forecast",
+    "date": "2026-05-20 13:45:33",
+    "status": "success",
+    "message": "Sales for 26Q1 Forecast.xlsx processed",
+    "output_file": "output/Mean_no_mtc_forecast_output.csv",
+    "params": {
+      "horizon": 6,
+      "aggregation": "mean",
+      "events": null
+    }
+  },
+  {
+    "type": "Forecast",
+    "date": "2026-05-14 15:46:54",
+    "status": "success",
+    "message": "sales_20199.xlsx processed",
+    "output_file": "output/deletemeforecast_output.csv",
+    "params": {
+      "horizon": 6,
+      "aggregation": "sum",
+      "events": null
+    }
+  },
+  {
+    "type": "Forecast",
+    "date": "2026-05-14 15:14:35",
+    "status": "success",
+    "message": "sales_20199.xlsx processed",
+    "output_file": "output/finaltestforecast_output.csv",
+    "params": {
+      "horizon": 6,
+      "aggregation": "sum",
+      "events": null
+    }
+  },
+  {
+    "type": "Forecast",
+    "date": "2026-05-14 12:22:45",
+    "status": "success",
+    "message": "sales_20199.xlsx processed",
+    "output_file": "output/todeletes_forecast_output.csv",
+    "params": {
+      "horizon": 6,
+      "aggregation": "sum",
+      "events": null
+    }
+  }
+]

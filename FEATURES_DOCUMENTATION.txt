@@ -1,0 +1,968 @@
+# Aircraft Parts Demand Forecasting System
+## **Executive Summary**
+
+**Purpose:** Predict quarterly demand for 10,000+ aircraft parts up to 2 years in advance to optimize inventory levels, reduce stockouts, and minimize excess inventory costs.
+
+**Business Value:**
+- 🎯 **Automated Planning**: Forecasts for all parts without manual intervention
+- 💰 **Cost Reduction**: Optimal inventory levels reduce carrying costs and emergency orders
+- ⚠️ **Risk Mitigation**: Early alerts for demand spikes and trend changes
+- 🔧 **Maintenance-Aware**: Adjusts forecasts during planned aircraft downtime
+- 📊 **Intelligent Classification**: Tells you which parts to trust vs. which need manual review
+
+**What Makes This System Reliable:**
+This system uses **4 layers of quality control** to ensure forecasts are realistic and actionable:
+1. **Smart Model Selection** - Automatically chooses the right forecasting method based on each part's history
+2. **Reality Checks** - Rejects unrealistic forecasts (e.g., predicting 10x demand spikes)
+3. **Multiple Expert Opinions** - Combines forecasts from multiple models when they agree
+4. **Safety Minimums** - Applies business rules to prevent forecasts that are too low
+
+---
+
+## **How It Works: 4-Step Quality Control Process**
+
+### **Step 1: Data Quality Assessment** 📋
+
+Before forecasting, the system evaluates each part's historical demand pattern:
+
+| Pattern Type | What It Means | Example | How System Responds |
+|-------------|---------------|---------|-------------------|
+| **Healthy** | Consistent orders, 2+ years of history | Ordered regularly, stable quantities | Uses all 9 forecasting methods |
+| **Intermittent** | Ordered sporadically (many zero months) | Order 50 units, then nothing for 6 months | Uses specialized "lumpy demand" methods |
+| **Volatile** | Highly unpredictable quantities | Order 10, then 150, then 5 | Adds stabilization (blends with average) |
+| **Sparse** | New part or limited history (<1 year) | Only 2-3 quarters of data | Uses simple averages only |
+
+**Why This Matters:** Different demand patterns require different forecasting approaches. A method that works for consistent parts may fail for sporadic parts.
+
+---
+
+### **Step 2: Model Competition** 🏆
+
+For each part, up to 9 different forecasting methods compete to generate the most accurate forecast:
+
+**Simple Methods** (Always Used):
+- **Moving Average**: Average of last 4 quarters
+- **Trend Analysis**: Detects if demand is growing or declining
+- **Recent Pattern**: Projects the most recent quarter forward
+
+**Advanced Methods** (Used for Healthy Parts):
+- **Seasonal Analysis**: Detects yearly patterns (e.g., higher demand in Q1)
+- **Event-Aware Models**: Factors in planned maintenance schedules
+- **Machine Learning**: Learns complex patterns from historical data
+
+**Specialized Methods** (Used for Intermittent Parts):
+- **Croston's Method**: Specifically designed for sporadic ordering patterns
+
+**How We Pick the Winner:**
+- Each method forecasts the last 6 months of known history
+- System compares predictions to actual sales
+- The most accurate method wins (lowest prediction error)
+
+**Example:**
+```
+Part ABC123 - Historical: [520, 530, 525, 548]
+├─ Moving Average predicts: 531 → Actual was 548 → Error: 17 units
+├─ Trend Analysis predicts: 555 → Actual was 548 → Error: 7 units ✓ WINNER
+└─ Recent Pattern predicts: 525 → Actual was 548 → Error: 23 units
+Result: Use Trend Analysis for this part
+```
+
+---
+
+### **Step 3: Reality Checks (Quality Gates)** 🚨
+
+Even if a method has the lowest error, the system rejects it if the forecast is unrealistic:
+
+**5 Automatic Checks:**
+
+1. **Extreme Forecast Check**
+   - ❌ Rejects: Forecasts >3x or <20% of your typical demand
+   - Example: If you normally order 100 units/quarter, reject forecasts of 400+ or <20
+
+2. **Volatility Check**
+   - ❌ Rejects: Forecasts that fluctuate wildly (more than historical pattern)
+   - Example: If your demand varies by ±50 units, reject forecasts varying by ±200 units
+
+3. **Accuracy Check**
+   - ❌ Rejects: Methods that were wrong by more than 100% during testing
+   - Example: If average demand is 50 units, reject methods with 60+ unit errors
+
+4. **Growth/Decline Check**
+   - ❌ Rejects: Forecasts predicting decline when part is clearly growing (or vice versa)
+   - Example: If last 4 quarters show 20%+ growth, reject forecasts showing decline
+
+5. **Zero Collapse Check**
+   - ❌ Rejects: Forecasts predicting near-zero demand for active parts
+   - Example: If you've been ordering regularly, reject forecasts of 0-2 units
+
+**What Happens if All Methods Fail These Checks?**
+- System uses your historical average as the forecast
+- Flags the part as "Low Confidence - Review Required"
+- You'll see "Fallback (All Gated)" in the output
+
+**Example:**
+```
+Part DEF456 - 8 Methods Tested:
+✓ Trend Analysis (Error: 12 units) - PASSED all checks
+✓ Moving Average (Error: 18 units) - PASSED all checks
+✗ Recent Pattern (Predicted 850 vs typical 200) - FAILED Extreme Forecast Check
+✗ Machine Learning (Predicted 5 vs typical 200) - FAILED Zero Collapse Check
+
+Winner: Trend Analysis (most accurate + passed reality checks)
+```
+
+---
+
+### **Step 4: Final Safety Adjustments** 🛡️
+
+After selecting the best method, the system applies two final protections:
+
+#### **A) Multiple Expert Opinions (When Appropriate)**
+
+If 2-3 methods are **similarly accurate** (within 15% error), the system **combines them** instead of picking just one:
+
+**Why Combine?**
+- Reduces risk of relying on a single method
+- Smooths out outlier predictions
+- More stable forecasts
+
+**How It Works:**
+- More accurate methods get more weight in the blend
+- Less accurate methods get less weight
+
+**Example:**
+```
+Part GHI789 - Top 3 Methods:
+├─ Trend Analysis: Error = 12 units (45% weight)
+├─ Machine Learning: Error = 14 units (38% weight)
+└─ Moving Average: Error = 16 units (17% weight)
+
+Combined Forecast: (Trend×0.45) + (ML×0.38) + (MA×0.17)
+Result: More reliable than any single method
+```
+
+#### **B) Forecast Minimums (Floor Protection)**
+
+Even the best forecast can occasionally predict unrealistically low numbers. The system applies **4 safety minimums**:
+
+1. **Historical Minimum**: Never forecast below 20% of your lowest non-zero order
+2. **Recent Average**: Never forecast below 30% of last year's average
+3. **Intermittent Floor**: For sporadic parts, minimum 10% of typical order size
+4. **Absolute Minimum**: For active parts, always forecast at least 1 unit
+
+**Why This Matters:**
+- Prevents stockouts from over-optimistic forecasts
+- Protects against forecasts that ignore known demand
+- Ensures active parts stay in stock
+
+**Example:**
+```
+Part JKL012:
+├─ Winning Method Predicts: 3 units for Q1
+├─ Historical Minimum (20% of 50): 10 units
+├─ Recent Average Minimum (30% of 40): 12 units
+└─ Final Forecast: 12 units (floor applied)
+
+Output shows: "25Q1: 12 (floor)" to indicate safety adjustment
+```
+
+---
+
+## **Understanding Your Forecast Output**
+
+### **Which Parts Can You Trust?** 🎯
+
+The system automatically classifies every part into **4 Forecastability Tiers**. This tells you how to use each forecast:
+
+---
+
+#### **Tier 1: HIGH CONFIDENCE** ✅ (Green Light - Trust These)
+
+**What It Means:**
+- 2+ years of consistent ordering history
+- Regular demand pattern (not sporadic)
+- Stable quantities (not wildly fluctuating)
+- System tested multiple methods and found accurate predictions
+
+**How to Use:**
+- ✓ **Use forecast quantities directly** for purchase orders
+- ✓ **Automate reordering** based on these forecasts
+- ✓ Set safety stock at 1.0-1.2x forecast (minimal buffer)
+- ✓ Review quarterly only
+
+**Example:**
+```
+Part: ABC-123456
+Tier: Tier_1_High
+Confidence: High
+Forecast: 25Q1=450, 25Q2=465, 25Q3=480
+
+What This Means:
+→ You can reliably order 450 units for Q1, 465 for Q2, 480 for Q3
+→ Add 10-20% safety stock (45-90 units)
+→ Total order: 495-540 units for Q1
+```
+
+**Typical Characteristics:**
+- Confidence = "High"
+- Quality = "Healthy"
+- ≥8 quarters of history
+- Model might be: Trend Analysis, Seasonal, Machine Learning
+
+---
+
+#### **Tier 2: MEDIUM CONFIDENCE** ⚠️ (Yellow Light - Use with Caution)
+
+**What It Means:**
+- 1-2 years of history (less data available), OR
+- Sporadic ordering (20-40% of months had zero orders), OR
+- Moderate variability in quantities
+
+**How to Use:**
+- ⚠️ **Use forecasts for direction**, not exact quantities
+- ⚠️ Plan for a **range** (forecast ± 50%)
+- ⚠️ Set safety stock at 1.5-2.0x forecast (larger buffer)
+- ⚠️ Review monthly
+
+**Example:**
+```
+Part: DEF-789012
+Tier: Tier_2_Medium
+Confidence: Medium
+Forecast: 25Q1=85
+
+What This Means:
+→ Plan for 65-130 units (85 ± 50%)
+→ Order based on upper range: 130 units
+→ Monthly review to adjust if needed
+→ Safety stock: 128-170 units (1.5-2x)
+```
+
+**Typical Characteristics:**
+- Confidence = "Medium"
+- Quality = "Intermittent" or 4-8 quarters of data
+- Model might be: Croston's, Ensemble, Moving Average
+
+---
+
+#### **Tier 3: LOW CONFIDENCE** 📊 (Orange Light - Volume Only)
+
+**What It Means:**
+- <1 year of history, OR
+- Highly sporadic (>40% zero orders), OR
+- Wildly fluctuating quantities, OR
+- System couldn't find accurate prediction method
+
+**How to Use:**
+- ⛔ **DO NOT use quarter-by-quarter forecasts**
+- ✓ **Use annual total only** (sum all 4 quarters)
+- ✓ Aggregate across similar parts for volume estimates
+- ✓ Buyer/planner judgment overrides system
+- ✓ Review weekly
+
+**Example:**
+```
+Part: GHI-345678
+Tier: Tier_3_Volume_Only
+Confidence: Low (Review)
+Forecast: 25Q1=12, 25Q2=12, 25Q3=12, 25Q4=12
+
+What This Means:
+→ DON'T order exactly 12 units each quarter
+→ USE annual volume: ~48 units/year
+→ Order based on: lead time + safety stock + buyer judgment
+→ Flag for manual review before each order
+```
+
+**Typical Characteristics:**
+- Confidence = "Low (Review)"
+- Quality = "Sparse" or "Volatile"
+- Model = "Fallback" or basic methods
+- System shows: "Low (Review)" flag
+
+---
+
+#### **Tier 4: NOT FORECASTABLE** ❌ (Red Light - Manual Only)
+
+**What It Means:**
+- Dormant part (all zeros recently)
+- <6 months of data
+- One-time order (single spike in history)
+- All forecasting methods rejected by quality checks
+
+**How to Use:**
+- ⛔ **Exclude from automated planning completely**
+- ✓ **Order only when customer requests**
+- ✓ Review for obsolescence
+- ✓ Maintain minimal stock or zero stock
+
+**Example:**
+```
+Part: JKL-901234
+Tier: Tier_4_Not_Forecastable
+Model: Fallback (All Gated)
+Forecast: 25Q1=0, 25Q2=0
+
+What This Means:
+→ Remove from automated replenishment
+→ Don't carry inventory unless customer pre-orders
+→ Consider obsoleting this part number
+→ Review annually only
+```
+
+**Typical Characteristics:**
+- Model = "Fallback (All Gated)"
+- All forecast quarters = 0
+- Quality = "Sparse"
+- System rejected all prediction methods
+
+---
+
+### **Quick Reference: How to Use Each Tier**
+
+| Tier | Order Based On | Safety Stock Buffer | Who Approves | Review How Often |
+|------|----------------|---------------------|--------------|------------------|
+| **Tier 1: High** | Forecast quantities | 1.0-1.2x (10-20% extra) | System (automated) | Every 3 months |
+| **Tier 2: Medium** | Forecast ranges | 1.5-2.0x (50-100% extra) | Planner approval | Every month |
+| **Tier 3: Volume Only** | Annual total | 2.5x+ or fixed amount | Buyer judgment | Every week |
+| **Tier 4: Not Forecastable** | Customer orders | Min stock or zero | Manual orders only | Every year |
+
+**Excel Tip:** Filter by `Forecastability_Tier` column to group parts by confidence level.
+
+---
+
+## **Maintenance Event Integration** 🔧
+
+**Problem:** Aircraft maintenance shutdowns reduce demand for certain parts. Forecasts should account for planned downtime.
+
+**Solution:** System automatically adjusts forecasts when maintenance is scheduled.
+
+### **How It Works:**
+
+1. **Load Maintenance Schedule**
+   - Input: CSV file with maintenance check names, start dates, end dates
+   - Current system: 420 maintenance events loaded
+
+2. **Match Events to Forecast Periods**
+   - System identifies which quarters have overlapping maintenance
+   - Example: "Plant Shutdown" from March 15 - April 30 affects Q2 2025
+
+3. **Adjust Forecasts**
+   - During maintenance quarters, demand is reduced by 30%
+   - Example: Original forecast 100 units → Adjusted to 70 units
+
+4. **Track Adjustments**
+   - Output shows which events affected each forecast
+   - Column: `Event_Applied` = "Plant Shutdown; Equipment Maintenance"
+
+**Business Value:**
+- Prevents over-ordering before maintenance periods
+- Reduces excess inventory during aircraft downtime
+- Aligns procurement with maintenance calendar
+
+**Example:**
+```
+Part: MNO-567890 (Engine Component)
+Normal Demand: 200 units/quarter
+Forecast for Q2 2025: 140 units (↓ 30%)
+Event Applied: "Annual Engine Overhaul"
+
+Action: Order 140 units for Q2 instead of 200 → Save inventory costs
+```
+
+---
+
+## **Business Intelligence Features** 📈
+
+### **1. Demand Trend Detection (Momentum Analysis)**
+
+**What It Does:** Automatically detects if demand is accelerating, slowing, or stable.
+
+**How It Works:**
+Compares three time periods:
+- **Current**: Last quarter (most recent 3 months)
+- **Mid-Term**: Last 6 months
+- **Long-Term**: Last 12 months
+
+**Status Categories:**
+
+| Status | What It Means | Action Required |
+|--------|---------------|-----------------|
+| **ACCELERATING** | Demand increasing steadily | Increase safety stock, validate with sales |
+| **SLOWING** | Demand decreasing steadily | Review for obsolescence, reduce inventory |
+| **REVERSAL (Recovery)** | Demand rebounding after decline | Watch closely, cautious restock |
+| **REVERSAL (Downturn)** | Demand declining after growth | Reduce orders, clear excess stock |
+| **STABLE** | Consistent demand pattern | Continue current planning |
+
+**Example:**
+```
+Part: PQR-123789
+Momentum: ACCELERATING
+Last Quarter: 250 units
+Last 6 Months Avg: 210 units
+Last 12 Months Avg: 180 units
+
+Action: Demand trending up 39% year-over-year
+→ Increase safety stock from 50 to 75 units
+→ Validate with sales team (new aircraft program?)
+```
+
+---
+
+### **2. High Usage Alerts** ⚠️
+
+**What It Does:** Flags parts where the forecast is significantly higher than historical average.
+
+**Trigger:** Forecasted demand >50% above 12-month average
+
+**Why It Matters:**
+- Early warning for potential stockouts
+- Catch unusual demand spikes
+- Validate before committing to large orders
+
+**Output:**
+- `High_Usage_Alert = "YES (Check Volume)"` → Review required
+- `High_Usage_Alert = "Normal"` → Proceed as usual
+
+**Example:**
+```
+Part: STU-456123
+12-Month Average: 200 units/quarter
+Forecast Q1 2025: 320 units
+Alert: YES (Check Volume)
+
+Action Required:
+→ Investigate: New aircraft order? Maintenance schedule change?
+→ Confirm with sales/planning before ordering 320 units
+→ If validated, adjust safety stock accordingly
+```
+
+---
+
+### **3. Forecast Confidence Scoring** 🎯
+
+**What It Does:** Tells you how reliable each forecast is.
+
+**Confidence Levels:**
+
+| Level | Meaning | Typical Error Range | How to Use |
+|-------|---------|-------------------|------------|
+| **High** | Reliable forecast | Within ±20% | Trust quantities, automate orders |
+| **Medium** | Moderate uncertainty | Within ±20-50% | Use ranges, add buffer |
+| **Low (Review)** | High uncertainty | >50% error | Manual review required |
+
+**How System Calculates This:**
+- Compares prediction error to historical average
+- Lower error = Higher confidence
+- Displayed clearly in `Confidence` column
+
+**Example:**
+```
+Part: VWX-789456
+Historical Average: 100 units/quarter
+Prediction Error: 15 units
+Confidence: High (15/100 = 15% error < 20% threshold)
+
+Action: Trust this forecast for automated ordering
+```
+
+---
+
+## **CSV Output Guide** 📊
+
+### **Essential Columns (What You Need to Know)**
+
+| Column | What It Tells You | How to Use It |
+|--------|------------------|---------------|
+| **Part_number** | Part identifier | Your reference number |
+| **Forecastability_Tier** | Tier_1_High / Tier_2_Medium / Tier_3_Volume_Only / Tier_4_Not_Forecastable | **START HERE** - Determines how to use forecast |
+| **Confidence** | High / Medium / Low (Review) | How much to trust the numbers |
+| **Data_Quality** | Healthy / Intermittent / Volatile / Sparse | Why system classified it this way |
+| **Momentum_Status** | ACCELERATING / SLOWING / STABLE / REVERSAL | Trend direction |
+| **High_Usage_Alert** | YES (Check Volume) / Normal | Demand spike warning |
+| **25Q1, 25Q2, 25Q3, ...** | Forecast quantities per quarter | **The numbers** - what to order |
+| **Sales_Last_Q** | Last quarter actual sales | Recent demand |
+| **Sales_Last_12M** | Last year total sales | Historical baseline |
+| **Event_Applied** | Maintenance event names or "None" | Why forecast was adjusted |
+| **Model_Winner** | Method used | Which approach worked best |
+
+### **Advanced Columns (For Analysis)**
+
+| Column | What It Tells You | When to Use It |
+|--------|------------------|----------------|
+| **Model_RMSE** | Prediction error (lower = better) | Compare accuracy across parts |
+| **Selection_Logic** | All methods tested with scores | Understand why winner was chosen |
+| **Sales_Last_2Q** | Last 6 months actual | Medium-term baseline |
+
+---
+
+## **How to Use the System: Step-by-Step** 🚀
+
+### **Step 1: Run the Forecast**
+
+```
+python -m src.app --input "sales_data.xlsx" --events-file "maintenance_events.csv" --outdir "output"
+```
+
+**What Happens:**
+- System processes 10,000+ parts (30-60 minutes)
+- Generates `forecast_output.csv` with forecasts for next 6-8 quarters
+- Each part gets its own optimal forecasting method
+
+---
+
+### **Step 2: Open the CSV in Excel**
+
+**First, Sort by Forecastability Tier:**
+1. Filter: `Forecastability_Tier = "Tier_1_High"`
+2. These are your **trusted forecasts** - use for automated replenishment
+
+---
+
+### **Step 3: Review High Confidence Parts (Tier 1)**
+
+**Action Plan:**
+- ✅ Use forecast quantities directly for purchase orders
+- ✅ Set safety stock at 1.0-1.2x forecast
+- ✅ Automate reordering for these parts
+- ✅ Review quarterly only
+
+**Check for Alerts:**
+- If `High_Usage_Alert = "YES"` → Validate spike with sales team before ordering
+- If `Momentum_Status = "ACCELERATING"` → Consider increasing safety stock
+- If `Event_Applied = (event name)` → Confirm maintenance schedule hasn't changed
+
+---
+
+### **Step 4: Review Medium Confidence Parts (Tier 2)**
+
+**Action Plan:**
+- ⚠️ Use forecast as **directional guidance**, not exact quantities
+- ⚠️ Plan for a range: Forecast ± 50%
+- ⚠️ Set safety stock at 1.5-2.0x forecast
+- ⚠️ Planner approval required before ordering
+- ⚠️ Review monthly
+
+**Decision Rule:**
+- Order based on **upper end** of forecast range
+- Example: Forecast = 85 → Order 100-130 units
+
+---
+
+### **Step 5: Review Low Confidence Parts (Tier 3)**
+
+**Action Plan:**
+- 🛑 **DO NOT** use quarter-by-quarter forecasts
+- ✓ Sum all 4 quarters for **annual volume estimate**
+- ✓ Order based on: lead time + buyer judgment + minimum stock levels
+- ✓ Review weekly before each order
+
+**Example:**
+```
+Part: XYZ-999000
+Forecast: Q1=12, Q2=12, Q3=12, Q4=12
+Total Annual: ~48 units
+
+Action:
+→ Don't order exactly 12 each quarter
+→ Order when: (Current Stock - Lead Time Demand) < Reorder Point
+→ Buyer reviews and approves each order
+```
+
+---
+
+### **Step 6: Review Not Forecastable Parts (Tier 4)**
+
+**Action Plan:**
+- ❌ Remove from automated replenishment
+- ✓ Order only when customer places order
+- ✓ Review for obsolescence (phase out?)
+- ✓ Annual review only
+
+---
+
+### **Step 7: Investigate Flagged Parts**
+
+**High Usage Alerts:**
+- Filter: `High_Usage_Alert = "YES (Check Volume)"`
+- Validate with sales team before large orders
+- Confirm forecast spike is real (not system error)
+
+**Low Confidence + High Demand:**
+- Filter: `Confidence = "Low (Review)"` AND `Sales_Last_12M > 1000`
+- High-value parts with poor forecastability
+- Prioritize for manual buyer review
+- May need different planning approach
+
+**Event-Affected Parts:**
+- Filter: `Event_Applied ≠ "None"`
+- Verify maintenance schedule matches system data
+- Adjust if maintenance dates have changed
+
+---
+
+## **Special Cases in Aircraft Parts Forecasting** ✈️
+
+### **Rotable Components**
+- Parts that are repaired and returned to stock
+- Demand includes: New purchases + Repair turnaround
+- **Action:** Use forecast but adjust for expected repair returns
+
+### **Consumable vs. Repairable**
+- **Consumables**: Direct forecast usage (gaskets, seals, filters)
+- **Repairables**: Forecast demand - expected repair returns
+
+### **AOG (Aircraft On Ground) Parts**
+- Critical parts that ground aircraft if unavailable
+- **Action:** Even if Tier 2-3, maintain higher safety stock (3-5x forecast)
+- Better to overstock than risk aircraft downtime
+
+### **Life-Limited Parts (LLP)**
+- Parts with mandatory replacement schedules
+- Demand driven by flight hours + maintenance intervals
+- **Action:** Cross-reference forecast with LLP tracking system
+
+### **Seasonal Maintenance Patterns**
+- Some parts only needed during annual heavy maintenance
+- May show high zero% but demand is predictable
+- **Action:** Check `Momentum_Status` and `Event_Applied` columns
+- If shows seasonal pattern + maintenance events, forecast is reliable
+
+---
+
+## **What Makes This System Reliable** 🔒
+
+### **Layer 1: Adaptive Intelligence**
+- **Not One-Size-Fits-All**: Each part gets a customized forecasting approach
+- **Pattern Recognition**: Automatically detects sporadic vs. consistent vs. seasonal demand
+- **Smart Method Selection**: Matches forecasting technique to demand pattern
+
+### **Layer 2: Model Competition**
+- **Up to 9 Methods Compete**: System doesn't assume one method is best
+- **Proven on Your Data**: Winner is tested on your actual historical sales
+- **Transparent Selection**: You can see which methods were tried and why winner was chosen
+
+### **Layer 3: Reality Checks (Quality Gates)**
+- **5 Automatic Filters**: Rejects forecasts that are too extreme, volatile, inaccurate, or illogical
+- **Historical Context**: Compares forecasts to your actual ordering patterns
+- **Growth/Decline Validation**: Ensures forecasts align with current trends
+
+### **Layer 4: Final Protections**
+- **Multiple Expert Opinions**: Combines 2-3 methods when they're similarly accurate (reduces single-method risk)
+- **Safety Minimums**: Applies 4 floor rules to prevent unrealistically low forecasts
+- **Automatic Fallback**: Uses historical average if all methods fail checks
+
+### **Layer 5: Aviation-Specific Features**
+- **Maintenance Integration**: Accounts for 420+ planned maintenance events
+- **Demand Reduction**: 30% lower forecasts during aircraft downtime
+- **Event Transparency**: Shows which maintenance events affected each forecast
+
+---
+
+## **System Capabilities Summary**
+
+### **Scale**
+- ✅ 10,000+ parts processed automatically
+- ✅ 6-8 quarters forecasted (1.5-2 years ahead)
+- ✅ 420+ maintenance events integrated
+- ✅ Processing time: 30-60 minutes for full run
+
+### **Quality Control**
+- ✅ 5 quality gates reject unrealistic forecasts
+- ✅ 4 safety minimum floors protect against low forecasts
+- ✅ Ensemble blending when multiple methods agree (reduces risk)
+- ✅ Automatic fallback to historical average if all methods fail
+
+### **Intelligence**
+- ✅ Automatic trend detection (accelerating/slowing/reversals)
+- ✅ High usage alerts for demand spikes
+- ✅ Confidence scoring (tells you when to trust forecasts)
+- ✅ Forecastability classification (4 tiers with clear usage guidance)
+
+### **Transparency**
+- ✅ Shows which method was used for each part
+- ✅ Shows which methods were tested and rejected
+- ✅ Shows which maintenance events affected forecast
+- ✅ Shows prediction accuracy for each part
+- ✅ Full audit trail in CSV output
+
+### **Reliability**
+- ✅ Backtested on your actual sales history
+- ✅ Multiple layers of error checking
+- ✅ Graceful degradation (never crashes, always produces output)
+- ✅ Conservative approach (safety minimums prevent stockouts)
+
+---
+
+## **Common Questions**
+
+### **Q: Why does the system reject some forecasting methods?**
+**A:** The 5 quality gates protect you from:
+- Forecasts predicting 10x demand spikes (extreme values)
+- Forecasts that jump wildly quarter-to-quarter (excessive volatility)
+- Methods that were wrong by >100% during testing (poor fit)
+- Forecasts predicting decline when part is clearly growing (trend mismatch)
+- Forecasts dropping to zero for active parts (forecast collapse)
+
+**Better to use historical average than an unrealistic forecast.**
+
+---
+
+### **Q: What does "Ensemble" mean in Model_Winner?**
+**A:** When 2-3 methods are similarly accurate (within 15% error), the system **combines them** instead of picking just one. This is more reliable than trusting a single method.
+
+Think of it like: "3 experts all think demand will be around 100 units, so let's average their opinions."
+
+---
+
+### **Q: Why does my forecast show "(floor)" after the number?**
+**A:** The system applied a safety minimum. The forecasting method predicted lower, but business rules require a minimum quantity to prevent stockouts.
+
+**Example:** Forecast shows "25Q1: 12 (floor)" means:
+- Method predicted maybe 5-8 units
+- System enforced minimum of 12 units (based on historical minimums)
+
+---
+
+### **Q: How do I know if a forecast is reliable?**
+**A:** Check these 3 columns in order:
+1. **Forecastability_Tier**: Tier_1_High = reliable, Tier_3/4 = not reliable
+2. **Confidence**: High = reliable, Low = not reliable
+3. **Model_Winner**: If it says "Fallback" or "Fallback (All Gated)" = not reliable
+
+**Rule of Thumb:** Tier 1 + High Confidence = Trust it. Everything else = Use with caution or manual review.
+
+---
+
+### **Q: What should I do with "Tier_3_Volume_Only" parts?**
+**A:** These parts have unpredictable quarter-by-quarter demand. Instead:
+- Sum all 4 quarters to get annual volume
+- Use this for capacity planning only
+- Order based on: Current stock + lead time + buyer judgment
+- Do NOT try to order exact quantities per quarter
+
+---
+
+### **Q: Why is my new part classified as "Sparse"?**
+**A:** Parts with <4 quarters (1 year) of history don't have enough data for advanced forecasting. This is expected for new products.
+
+**Action:** Use historical average or comparable part analysis until you have 4+ quarters of demand history.
+
+---
+
+### **Q: How does the system handle seasonal parts?**
+**A:** If a part has a clear yearly pattern (e.g., only used in Q1), the advanced methods (Seasonal Analysis, Machine Learning) will detect this and forecast accordingly.
+
+**Check:** `Momentum_Status` and quarterly forecast pattern. If Q1 forecast is much higher than Q2-Q4, system detected seasonality.
+
+---
+
+### **Q: What if the maintenance schedule changes?**
+**A:** Re-run the system with updated events CSV file. The forecasts will automatically adjust to the new maintenance dates.
+
+**Important:** Forecasts are only as accurate as the maintenance schedule you provide.
+
+---
+
+## **Input File Requirements** 📁
+
+### **Sales Data (Required)**
+- **Format**: Excel (.xlsx) or CSV (.csv)
+- **Required Columns**: `Date`, `Part_number`, `Value`
+- **Date Format**: YYYY-MM-DD or MM/DD/YYYY
+- **Example:**
+```
+Date       | Part_number | Value
+2022-01-01 | ABC-123     | 15
+2022-01-02 | ABC-123     | 8
+2022-01-03 | DEF-456     | 22
+```
+
+### **Maintenance Events (Optional but Recommended)**
+- **Format**: CSV (.csv)
+- **Required Columns**: `Check`, `Start Date`, `End Date`
+- **Example:**
+```
+Check                    | Start Date | End Date
+Plant Shutdown           | 2025-03-15 | 2025-04-30
+Equipment Maintenance    | 2025-06-01 | 2025-06-15
+Annual Overhaul          | 2025-09-01 | 2025-10-15
+```
+
+---
+
+## **Command Examples** 💻
+
+### **Basic Run (with maintenance events)**
+```
+python -m src.app --input "sales_data.xlsx" --events-file "maintenance_events.csv" --outdir "output"
+```
+
+### **Fast Mode (3 models only, 10x faster)**
+```
+python -m src.app --input "sales_data.xlsx" --fast-mode --skip-plots
+```
+
+### **Extended Forecast (8 quarters instead of 6)**
+```
+python -m src.app --input "sales_data.xlsx" --horizon 8
+```
+
+### **Custom Output Name**
+```
+python -m src.app --input "sales_data.xlsx" --outfile "Q1_2025_Forecast.csv"
+```
+
+---
+
+## **Appendix: Technical Details** 🔧
+
+### **9 Forecasting Methods Used**
+
+#### **Simple Methods** (Fast, Always Available)
+1. **Naive**: Projects last quarter forward
+2. **Moving Average**: Average of last 4 quarters
+3. **Holt-Winters**: Trend detection with smoothing
+
+#### **Advanced Statistical Methods** (For Healthy Parts)
+4. **Theta**: Advanced pattern decomposition
+5. **Seasonal ARIMA**: Captures yearly patterns
+6. **Auto ARIMA**: Automatically tunes parameters
+7. **Prophet**: Meta/Facebook method with event support
+
+#### **Specialized Methods** (For Specific Patterns)
+8. **Croston's**: Designed for sporadic/intermittent demand
+
+#### **Machine Learning** (For Complex Patterns)
+9. **XGBoost/LightGBM**: Learns from historical patterns and events
+
+**Note:** System automatically selects which methods to try based on data quality. You don't need to understand these methods - the system handles it.
+
+---
+
+### **Quality Gate Details**
+
+| Gate | Purpose | Threshold | Example |
+|------|---------|-----------|---------|
+| **1. Extreme Values** | Prevent unrealistic spikes/drops | >3x or <20% of average | Reject if forecasting 600 when typical is 100 |
+| **2. Excessive Volatility** | Prevent erratic fluctuations | >2.5x historical variation | Reject if forecast varies ±200 when history varies ±50 |
+| **3. Poor Fit** | Require minimum accuracy | Error <100% of average | Reject if error is 120 units when average is 100 |
+| **4. Trend Mismatch** | Align with growth/decline | Match trend direction | Reject decline forecast when part growing 20%+ |
+| **5. Forecast Collapse** | Prevent zero forecasts for active parts | >0 for parts with demand | Reject 0-2 unit forecast when average is 200 |
+
+---
+
+### **Forecast Floor Details**
+
+| Floor Type | Calculation | Purpose | Example |
+|-----------|-------------|---------|---------|
+| **Historical** | 20% of lowest non-zero demand | Never go below past minimums | Min past order = 50 → Floor = 10 |
+| **Moving Average** | 30% of last 4-quarter average | Stay connected to recent demand | Last 4Q avg = 80 → Floor = 24 |
+| **Intermittent** | 10% of historical mean | Minimum for sporadic parts | Mean = 40 → Floor = 4 |
+| **Absolute** | 1 unit | Always stock active parts | If mean >10 → Floor = 1 |
+
+**Final Floor = Maximum of all 4 calculations**
+
+---
+
+### **Ensemble Blending Logic**
+
+**When Multiple Methods Agree:**
+- If top 2-3 methods have similar accuracy (within 15% error), combine them
+- **Weight Calculation**: Methods with lower error get more influence
+  - Weight = (1 / Error) / Sum of all (1 / Error)
+- **Example:** Errors of 12, 14, 16 → Weights: 45%, 38%, 17%
+
+**Why Combine Instead of Pick One:**
+- Reduces risk of single-method failure
+- More stable predictions
+- Smooths out outliers
+
+---
+
+### **System Requirements**
+
+**Software:**
+- Python 3.13 or newer
+- 9 forecasting libraries (automatically installed)
+- Excel or CSV viewer
+
+**Hardware:**
+- ~2GB RAM for 10,000 parts
+- Windows/Mac/Linux compatible
+- No GPU required
+
+**Processing Time:**
+- Fast Mode: ~10-15 minutes for 10,000 parts
+- Normal Mode: ~30-45 minutes for 10,000 parts
+- Depends on: Number of parts, data quality, system resources
+
+---
+
+## **Bottom Line** 🎯
+
+This is an **aircraft parts demand forecasting system** designed for inventory planning that:
+
+✅ **Automates** quarterly demand forecasts for 10,000+ parts (1.5-2 years ahead)
+
+✅ **4-Layer Quality Control** ensures forecast reliability:
+   - **Layer 1:** Matches forecasting method to demand pattern (Healthy/Intermittent/Volatile/Sparse)
+   - **Layer 2:** Competes up to 9 different methods to find most accurate
+   - **Layer 3:** Applies 5 quality gates to reject unrealistic forecasts
+   - **Layer 4:** Combines multiple expert opinions when appropriate + enforces safety minimums
+
+✅ **Maintenance-Aware** - Integrates 420+ aircraft maintenance events
+   - Automatically reduces forecasts during scheduled downtime (30% reduction)
+   - Tracks which events affected each forecast (full transparency)
+
+✅ **Intelligent Alerts** help you prioritize:
+   - **Demand Spikes**: Flags forecasts >50% above historical average
+   - **Trend Changes**: Detects accelerating/slowing/reversing demand patterns
+   - **Confidence Scores**: Tells you exactly when to trust forecasts vs. manual review
+
+✅ **4-Tier Classification** guides usage:
+   - **Tier 1 (High)**: Trust forecasts → Automate replenishment
+   - **Tier 2 (Medium)**: Use ranges + buffers → Semi-automated
+   - **Tier 3 (Volume Only)**: Annual planning only → Manual ordering
+   - **Tier 4 (Not Forecastable)**: Exclude from automation → On-demand only
+
+✅ **Complete Transparency** - Every decision is documented:
+   - Shows which methods were tested and why winner was chosen
+   - Shows which methods failed quality checks and why
+   - Shows which maintenance events affected forecast
+   - Full audit trail for compliance and validation
+
+**Result:** Reliable, actionable demand forecasts that reduce aircraft parts inventory costs while maintaining readiness and avoiding AOG (Aircraft On Ground) situations.
+
+**For Planners/Buyers:** Clear guidance on which parts to trust (Tier 1), which need buffers (Tier 2), and which require manual review (Tier 3-4).
+
+**For Management:** Improved inventory turns, reduced carrying costs, fewer emergency shipments, better maintenance alignment.
+              │  theta(15.3) |       │
+              │  sarimax(17.1) |     │
+              │  holt_winters(19.7) |│
+              │  sma(32.5) |         │
+              │  [GATED:             │
+              │   naive(extreme)]"   │
+              │                      │
+              │ Forecast:            │
+              │ 25Q1 = 548 (floor)   │
+              │ 25Q2 = 562 (floor)   │
+              │ 25Q3 = 571           │
+              │ 25Q4 = 585           │
+              └──────────────────────┘
+```
+
+---
+
+## **End of Documentation**
+- ✅ **Automates** model selection for 10,000+ parts
+- ✅ **Adapts** to data quality and patterns
+- ✅ **Integrates** maintenance events natively
+- ✅ **Provides** business intelligence (momentum, alerts, confidence)
+- ✅ **Ensures** transparency (model selection logic, event attribution)
+- ✅ **Optimizes** performance (adaptive model pool, graceful degradation)
+- ✅ **Validates** forecasts (backtesting, confidence intervals)
+- ✅ **Protects** against unrealistic forecasts (quality gates, floors) *(NEW)*
+- ✅ **Reduces** risk through ensemble blending *(NEW)*
+
+**Result:** Reliable, explainable, event-aware demand forecasts with full audit trails and robust quality control.

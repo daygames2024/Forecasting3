@@ -1,0 +1,3 @@
+python -m src.app --input "python testing new.xlsx" --outfile "All Working.csv" --skip-plots --events-file "maintenance_events.csv"
+
+python -m pip install -r requirements.txt

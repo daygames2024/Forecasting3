@@ -1,0 +1,140 @@
+[
+  {
+    "type": "Forecast",
+    "date": "2026-05-20 22:05:28",
+    "status": "success",
+    "message": "31 dec 2022 to 31 dec 2025.xlsx processed",
+    "output_file": "Test for mean larger data\\Mean_NO-mtc_forecast_output.csv",
+    "params": {
+      "horizon": 6,
+      "aggregation": "mean",
+      "events": null
+    }
+  },
+  {
+    "type": "Forecast",
+    "date": "2026-05-20 20:15:55",
+    "status": "success",
+    "message": "31 dec 2022 to 31 dec 2025.xlsx processed",
+    "output_file": "Test for mean larger data\\Sum_NO-mtc_forecast_output.csv",
+    "params": {
+      "horizon": 6,
+      "aggregation": "sum",
+      "events": null
+    }
+  },
+  {
+    "type": "Forecast",
+    "date": "2026-05-20 19:49:36",
+    "status": "success",
+    "message": "31 dec 2022 to 31 dec 2025.xlsx processed",
+    "output_file": "Test for mean larger data\\Sum_with_mtc_forecast_output.csv",
+    "params": {
+      "horizon": 6,
+      "aggregation": "sum",
+      "events": "maintenance_events.csv"
+    }
+  },
+  {
+    "type": "Forecast",
+    "date": "2026-05-20 17:17:42",
+    "status": "success",
+    "message": "31 dec 2022 to 31 dec 2025.xlsx processed",
+    "output_file": "Test for mean larger data\\Mean_with_mtc_forecast_output.csv",
+    "params": {
+      "horizon": 6,
+      "aggregation": "mean",
+      "events": "maintenance_events.csv"
+    }
+  },
+  {
+    "type": "Forecast",
+    "date": "2026-05-20 15:14:41",
+    "status": "success",
+    "message": "Sales for 26Q1 Forecast.xlsx processed",
+    "output_file": "Test for mean and mtc events\\Mean_with_mtc_forecast_output.csv",
+    "params": {
+      "horizon": 6,
+      "aggregation": "mean",
+      "events": "maintenance_events.csv"
+    }
+  },
+  {
+    "type": "Forecast",
+    "date": "2026-05-20 13:45:33",
+    "status": "success",
+    "message": "Sales for 26Q1 Forecast.xlsx processed",
+    "output_file": "output/Mean_no_mtc_forecast_output.csv",
+    "params": {
+      "horizon": 6,
+      "aggregation": "mean",
+      "events": null
+    }
+  },
+  {
+    "type": "Forecast",
+    "date": "2026-05-20 13:08:13",
+    "status": "error",
+    "message": "Forecast failed - see error details",
+    "params": {
+      "horizon": 6,
+      "aggregation": "mean"
+    }
+  },
+  {
+    "type": "Forecast",
+    "date": "2026-05-20 12:59:39",
+    "status": "error",
+    "message": "Forecast failed - see error details",
+    "params": {
+      "horizon": 6,
+      "aggregation": "mean"
+    }
+  },
+  {
+    "type": "Forecast",
+    "date": "2026-05-14 15:46:54",
+    "status": "success",
+    "message": "sales_20199.xlsx processed",
+    "output_file": "output/deletemeforecast_output.csv",
+    "params": {
+      "horizon": 6,
+      "aggregation": "sum",
+      "events": null
+    }
+  },
+  {
+    "type": "Forecast",
+    "date": "2026-05-14 15:14:35",
+    "status": "success",
+    "message": "sales_20199.xlsx processed",
+    "output_file": "output/finaltestforecast_output.csv",
+    "params": {
+      "horizon": 6,
+      "aggregation": "sum",
+      "events": null
+    }
+  },
+  {
+    "type": "Forecast",
+    "date": "2026-05-14 12:22:45",
+    "status": "success",
+    "message": "sales_20199.xlsx processed",
+    "output_file": "output/todeletes_forecast_output.csv",
+    "params": {
+      "horizon": 6,
+      "aggregation": "sum",
+      "events": null
+    }
+  },
+  {
+    "type": "Forecast",
+    "date": "2026-05-14 11:58:38",
+    "status": "error",
+    "message": "Forecast failed - see error details",
+    "params": {
+      "horizon": 6,
+      "aggregation": "sum"
+    }
+  }
+]

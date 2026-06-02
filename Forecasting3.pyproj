@@ -1,0 +1,123 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>4f458728-5e1d-45c3-84b9-4304cad72e4a</ProjectGuid>
+    <ProjectHome>.</ProjectHome>
+    <StartupFile>src\app.py</StartupFile>
+    <SearchPath>
+    </SearchPath>
+    <WorkingDirectory>.</WorkingDirectory>
+    <OutputPath>.</OutputPath>
+    <Name>Forecasting3</Name>
+    <RootNamespace>Forecasting3</RootNamespace>
+    <InterpreterId>MSBuild|env|$(MSBuildProjectFullPath)</InterpreterId>
+    <IsWindowsApplication>False</IsWindowsApplication>
+    <TestFramework>Pytest</TestFramework>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <DebugSymbols>true</DebugSymbols>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <DebugSymbols>true</DebugSymbols>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="check_duplicates.py" />
+    <Compile Include="Forecasting3.py" />
+    <Compile Include="forecast_dashboard.py" />
+    <Compile Include="merge_bias_files.py" />
+    <Compile Include="run_validation_debug.py" />
+    <Compile Include="src\aggregator.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="src\app.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="src\forecaster.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="src\io_loader.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="src\plotting.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="src\validator.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="src\writer.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="src\__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="tests\test_quarter_start.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="test_confidence_intervals.py" />
+    <Compile Include="test_events.py" />
+    <Compile Include="validate_input_data.py" />
+    <Compile Include="validate_simple.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="configs\" />
+    <Folder Include="tests\" />
+    <Folder Include="outputs\" />
+    <Folder Include="outputs\forecasts\" />
+    <Folder Include="outputs\debug\" />
+    <Folder Include="outputs\plots\" />
+    <Folder Include="src\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include=".gitignore" />
+    <Content Include="BIAS_CORRECTION_LOCATION.md" />
+    <Content Include="CHANGELOG.md" />
+    <Content Include="CONFIDENCE_INTERVALS_GUIDE.md" />
+    <Content Include="CONFIDENCE_INTERVALS_IMPLEMENTATION.md" />
+    <Content Include="configs\default.yaml" />
+    <Content Include="CORRECTED_FORECAST_SUMMARY_FEATURE.md" />
+    <Content Include="DASHBOARD_QUICK_REFERENCE.md" />
+    <Content Include="DOCUMENTATION_UPDATE_SUMMARY.md" />
+    <Content Include="FEATURES_DOCUMENTATION.txt" />
+    <Content Include="FORECAST_PERCENTILES_GUIDE.md" />
+    <Content Include="HOW_TO_BIAS_CORRECTION.md" />
+    <Content Include="HOW_TO_COMPARE_FORECASTS.md" />
+    <Content Include="HOW_TO_CREATE_BIAS_CORRECTION.md" />
+    <Content Include="HOW_TO_CREATE_FORECAST.md" />
+    <Content Include="HOW_TO_SUMMARY_SHEETS.md" />
+    <Content Include="HOW_TO_UPDATE_BIAS_MONTHLY.md" />
+    <Content Include="HOW_TO_VALIDATE_INPUT_DATA.md" />
+    <Content Include="IMPLEMENTATION_SUMMARY.md" />
+    <Content Include="QUICK_REFERENCE.md" />
+    <Content Include="README.md">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="requirements.txt" />
+    <Content Include="STREAMLIT_DASHBOARD_GUIDE.md" />
+    <Content Include="STREAMLIT_DASHBOARD_README.md" />
+    <Content Include="STREAMLIT_IMPLEMENTATION_SUMMARY.md" />
+    <Content Include="VALIDATION_SUMMARY_EXAMPLE.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <Interpreter Include="env\">
+      <Id>env</Id>
+      <Version>3.13</Version>
+      <Description>env (Python 3.13 (64-bit))</Description>
+      <InterpreterPath>Scripts\python.exe</InterpreterPath>
+      <WindowsInterpreterPath>Scripts\pythonw.exe</WindowsInterpreterPath>
+      <PathEnvironmentVariable>PYTHONPATH</PathEnvironmentVariable>
+      <Architecture>X64</Architecture>
+    </Interpreter>
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
+  <!-- Uncomment the CoreCompile target to enable the Build command in
+       Visual Studio and specify your pre- and post-build commands in
+       the BeforeBuild and AfterBuild targets below. -->
+  <!--<Target Name="CoreCompile" />-->
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+</Project>

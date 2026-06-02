@@ -1,0 +1,6 @@
+{
+  "output_folder": "Test for mean larger data2/",
+  "default_horizon": 6,
+  "default_agg": "sum",
+  "skip_plots": true
+}

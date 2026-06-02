@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+*.env
+
+# Data files (likely sensitive - remove line if you want these pushed)
+*.csv
+*.xlsx
+*.xls
+
+# Output folders
+output/
+results/
+
+# VS / OS
+.vs/
+*.user
+Thumbs.db
+.DS_Store
