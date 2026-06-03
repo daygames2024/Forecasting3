@@ -1,6 +1,7 @@
 """
 Entry point for Streamlit Cloud deployment.
-Points to the main dashboard application.
+Redirects execution to forecast_dashboard.py
 """
 
-from forecast_dashboard import *
+import runpy
+runpy.run_path("forecast_dashboard.py", run_name="__main__")
