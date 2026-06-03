@@ -281,8 +281,18 @@ with st.sidebar:
     if output_path.exists():
         files = list(output_path.glob("*"))
         st.metric("Files", len(files))
-        if st.button("📂 Open Folder", use_container_width=True):
-            os.startfile(output_path) if os.name == 'nt' else subprocess.run(['open', output_path])
+        if files:
+            for f in sorted(files):
+                col1, col2 = st.columns([3, 1])
+                with col1:
+                    st.caption(f.name)
+                with col2:
+                    st.download_button(
+                        "⬇️",
+                        data=open(f, 'rb').read(),
+                        file_name=f.name,
+                        key=f"sidebar_dl_{f.name}"
+                    )
     else:
         st.info("No output folder yet")
 
