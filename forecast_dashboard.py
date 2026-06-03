@@ -1172,57 +1172,7 @@ with tab4:
     ]:
         show_doc(doc_file, description, "dashboard")
 
-    for doc_file, description in docs_concepts:
-        if Path(doc_file).exists():
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                st.markdown(f"📊 **{doc_file}** - {description}")
-            with col2:
-                if st.button("📖 Open", key=f"doc_{doc_file}"):
-                    try:
-                        os.startfile(doc_file) if os.name == 'nt' else subprocess.run(['open', doc_file])
-                    except:
-                        st.warning("Could not open file automatically")
 
-    st.markdown("#### Forecasting Guides")
-    docs_forecast = [
-        ("HOW_TO_CREATE_FORECAST.md", "Creating forecasts"),
-        ("HOW_TO_UPDATE_BIAS_MONTHLY.md", "Monthly bias updates"),
-        ("HOW_TO_BIAS_CORRECTION.md", "Bias correction guide"),
-        ("HOW_TO_CREATE_BIAS_CORRECTION.md", "5-iteration bias creation"),
-        ("CORRECTED_FORECAST_SUMMARY_FEATURE.md", "Summary sheet feature"),
-    ]
-
-    for doc_file, description in docs_forecast:
-        if Path(doc_file).exists():
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                st.markdown(f"📄 **{doc_file}** - {description}")
-            with col2:
-                if st.button("📖 Open", key=f"doc_{doc_file}"):
-                    try:
-                        os.startfile(doc_file) if os.name == 'nt' else subprocess.run(['open', doc_file])
-                    except:
-                        st.warning("Could not open file automatically")
-
-    st.markdown("#### Dashboard Guides")
-    docs_dashboard = [
-        ("STREAMLIT_DASHBOARD_README.md", "Dashboard overview & features"),
-        ("STREAMLIT_DASHBOARD_GUIDE.md", "Complete dashboard user guide"),
-        ("DASHBOARD_QUICK_REFERENCE.md", "Quick reference card"),
-    ]
-
-    for doc_file, description in docs_dashboard:
-        if Path(doc_file).exists():
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                st.markdown(f"📄 **{doc_file}** - {description}")
-            with col2:
-                if st.button("📖 Open", key=f"doc_{doc_file}"):
-                    try:
-                        os.startfile(doc_file) if os.name == 'nt' else subprocess.run(['open', doc_file])
-                    except:
-                        st.warning("Could not open file automatically")
 
 # Footer
 st.markdown("---")
