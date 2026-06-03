@@ -1108,15 +1108,45 @@ with tab4:
         **Bias correction active:** {'✅ Yes' if Path('output/forecast_accuracy_report.csv').exists() else '❌ No'}
         """)
 
-    st.markdown("---")
+        st.markdown("### 📚 Documentation")
 
-    st.markdown("### 📚 Documentation")
+    def show_doc(doc_file, description, key_prefix):
+        if Path(doc_file).exists():
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                st.markdown(f"📄 **{doc_file}** - {description}")
+            with col2:
+                if st.button("📖 Open", key=f"{key_prefix}_{doc_file}"):
+                    toggle_key = f"show_doc_{doc_file}"
+                    st.session_state[toggle_key] = not st.session_state.get(toggle_key, False)
+            if st.session_state.get(f"show_doc_{doc_file}", False):
+                with st.expander(f"📖 {doc_file}", expanded=True):
+                    st.markdown(Path(doc_file).read_text(encoding="utf-8"))
 
     st.markdown("#### Understanding Forecasts")
-    docs_concepts = [
+    for doc_file, description in [
         ("FORECAST_PERCENTILES_GUIDE.md", "P10, P50, P90 explained - Which to use?"),
         ("BIAS_CORRECTION_LOCATION.md", "Where bias correction files are stored"),
-    ]
+    ]:
+        show_doc(doc_file, description, "concepts")
+
+    st.markdown("#### Forecasting Guides")
+    for doc_file, description in [
+        ("HOW_TO_CREATE_FORECAST.md", "Creating forecasts"),
+        ("HOW_TO_UPDATE_BIAS_MONTHLY.md", "Monthly bias updates"),
+        ("HOW_TO_BIAS_CORRECTION.md", "Bias correction guide"),
+        ("HOW_TO_CREATE_BIAS_CORRECTION.md", "5-iteration bias creation"),
+        ("CORRECTED_FORECAST_SUMMARY_FEATURE.md", "Summary sheet feature"),
+    ]:
+        show_doc(doc_file, description, "forecast")
+
+    st.markdown("#### Dashboard Guides")
+    for doc_file, description in [
+        ("STREAMLIT_DASHBOARD_README.md", "Dashboard overview & features"),
+        ("STREAMLIT_DASHBOARD_GUIDE.md", "Complete dashboard user guide"),
+        ("DASHBOARD_QUICK_REFERENCE.md", "Quick reference card"),
+    ]:
+        show_doc(doc_file, description, "dashboard")
 
     for doc_file, description in docs_concepts:
         if Path(doc_file).exists():
