@@ -1,28 +1,8 @@
-
-# Core libraries
+streamlit>=1.28.0
+pandas==2.2.1
 numpy==1.26.4
-pandas==2.2.1 
 matplotlib==3.8.2
-
-# Forecasting models
+openpyxl>=3.0.0
+scikit-learn==1.7.1
 statsmodels==0.14.2
-prophet==1.1.5
-pmdarima==2.0.4
-tbats==1.1.2
-sktime==0.40.1
-
-# Machine Learning
-scikit-learn==1.7.1  # Compatible with sktime (<1.8.0)
 xgboost==2.0.3
-lightgbm==4.3.0
-
-# Utilities
-pathlib==1.0.1
-psutil==5.9.8  # For memory monitoring
-argparse==1.4.0  # CLI argument parsing
-
-# Excel support
-openpyxl>=3.0.0  # Required for Excel file creation with summaries
-
-# Web Dashboard (Optional - only needed for Streamlit interface)
-streamlit>=1.28.0  # Web-based dashboard interface
