@@ -536,6 +536,23 @@ with tab2:
 
     st.markdown("---")
 
+    # Correction factors upload
+    st.subheader("🔧 Correction Factors (Optional)")
+    st.caption("Upload your saved `correction_factors.csv` to apply bias correction to this forecast.")
+
+    correction_file = st.file_uploader(
+        "Upload correction factors file",
+        type=['csv'],
+        help="CSV file previously downloaded after a bias correction run",
+        key="correction_upload"
+    )
+
+    if correction_file:
+        st.success(f"✅ Correction factors loaded — {correction_file.name}")
+        st.info(f"📁 **Size:** {format_file_size(correction_file.size)}  \n📄 **Name:** {correction_file.name}")
+
+    st.markdown("---")
+
     # Advanced options
     with st.expander("⚙️ Advanced Options", expanded=False):
         col1, col2, col3 = st.columns(3)
@@ -629,6 +646,13 @@ with tab2:
                         # Get output folder from settings
                         output_folder_path = Path(st.session_state.settings.get('output_folder', 'output/'))
                         output_folder_path.mkdir(parents=True, exist_ok=True)
+
+                        # Save correction factors to output folder if uploaded
+                        if correction_file:
+                            correction_path = output_folder_path / "correction_factors.csv"
+                            with open(correction_path, 'wb') as f:
+                                f.write(correction_file.getbuffer())
+                            st.info("🔧 Correction factors saved — bias correction will be applied automatically.")
 
                         # Build command
                         cmd = [
