@@ -92,6 +92,22 @@ st.markdown("""
     .stDataFrame > div {
         overflow-x: auto;
     }
+    /* Hide Streamlit Cloud "Manage app" toolbar */
+    .stAppDeployButton {
+        display: none !important;
+    }
+    [data-testid="manage-app-button"] {
+        display: none !important;
+    }
+    .viewerBadge_container__1QSob {
+        display: none !important;
+    }
+    #MainMenu {
+        display: none !important;
+    }
+    footer {
+        display: none !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
