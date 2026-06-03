@@ -632,9 +632,9 @@ with tab2:
                             # Copy fixed file to output folder for retention (use settings folder)
                             output_dir = Path(st.session_state.settings.get('output_folder', 'output/'))
                             output_dir.mkdir(exist_ok=True)
-                            saved_fixed_path = output_dir / fixed_sales_path.name
+                            saved_fixed_path = output_dir / Path(fixed_sales_path.name).name
                             shutil.copy2(fixed_sales_path, saved_fixed_path)
-                            st.info(f"💾 Fixed file saved to: {saved_fixed_path}")
+                            st.info(f"💾 Fixed file saved to: {saved_fixed_path.name}")
 
                             # Show validation summary in expander
                             with st.expander("📋 View Validation Details", expanded=False):
