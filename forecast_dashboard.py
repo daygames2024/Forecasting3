@@ -92,7 +92,7 @@ st.markdown("""
     .stDataFrame > div {
         overflow-x: auto;
     }
-    /* Hide Streamlit Cloud "Manage app" toolbar */
+    /* Hide Streamlit Cloud "Manage app" toolbar only */
     .stAppDeployButton {
         display: none !important;
     }
@@ -100,12 +100,6 @@ st.markdown("""
         display: none !important;
     }
     .viewerBadge_container__1QSob {
-        display: none !important;
-    }
-    #MainMenu {
-        display: none !important;
-    }
-    footer {
         display: none !important;
     }
 </style>
