@@ -609,7 +609,7 @@ with tab2:
                         st.info("🔍 Step 1/2: Validating and fixing sales data...")
 
                         validate_cmd = [
-                            "python", "validate_input_data.py",
+                            sys.executable, "validate_input_data.py",
                             "--sales", str(sales_path),
                             "--fix"
                         ]
@@ -666,7 +666,7 @@ with tab2:
 
                         # Build command
                         cmd = [
-                            "python", "-m", "src.app",
+                            sys.executable, "-m", "src.app",
                             "--input", str(final_sales_path),
                             "--horizon", str(horizon),
                             "--agg", aggregation,
@@ -910,7 +910,7 @@ with tab3:
 
                         # Build command
                         cmd = [
-                            "python", "fix_forecast_comparison.py",
+                            sys.executable, "fix_forecast_comparison.py",
                             "--old-forecast", str(forecast_path),
                             "--actual-sales", str(actuals_path)
                         ]
