@@ -3,6 +3,11 @@ pandas==2.2.1
 numpy==1.26.4
 matplotlib==3.8.2
 openpyxl>=3.0.0
-scikit-learn==1.7.1
+scikit-learn==1.5.2
 statsmodels==0.14.2
 xgboost==2.0.3
+prophet==1.1.5
+pmdarima==2.0.4
+psutil==5.9.8
+lightgbm==4.3.0
+tbats==1.1.3
