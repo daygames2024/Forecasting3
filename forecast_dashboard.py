@@ -280,7 +280,7 @@ with st.sidebar:
     st.markdown("### 📁 Output Folder")
     output_path = Path(st.session_state.settings.get('output_folder', 'output/'))
     if output_path.exists():
-        files = list(output_path.glob("*"))
+        files = [f for f in output_path.glob("*") if f.is_file()]
         st.metric("Files", len(files))
         if files:
             for f in sorted(files):
