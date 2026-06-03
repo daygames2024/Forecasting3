@@ -377,6 +377,14 @@ def forecast_with_model(series, model_name, horizon, events_df=None, last_q=None
     try:
         event_names = None
 
+        # Skip heavy models when memory is low (Streamlit Cloud has 1GB limit)
+        heavy_models = ["auto_arima", "prophet", "sarimax", "xgboost", "lightgbm"]
+        if model_name in heavy_models:
+            available_mb = psutil.virtual_memory().available / (1024 * 1024)
+            if available_mb < 300:
+                print(f"[WARN] Skipping {model_name} - low memory ({available_mb:.0f}MB)")
+                return None, None
+
         if model_name == "holt_winters":
             result = ExponentialSmoothing(series, trend="add", seasonal=None).fit().forecast(horizon)
             fc = result.clip(lower=0).tolist() if hasattr(result, 'clip') else [max(0, x) for x in result]
@@ -774,13 +782,22 @@ def main():
     print(f"[INFO] Processing {len(parts)} parts...")
 
     for i, part in enumerate(parts):
+        # Check available memory before each part - skip heavy models if low
+        available_mb = psutil.virtual_memory().available / (1024 * 1024)
+        if available_mb < 200:
+            print(f"[WARN] Low memory ({available_mb:.0f}MB) at part {i} - forcing garbage collection")
+            gc.collect()
+
         res = process_single_part(part, qdf[qdf["Part_number"] == part], args, plots_dir, last_q, events_df)
         stats[res["Momentum_Status"]] += 1
-        
+
         pd.DataFrame([res]).to_csv(forecast_file, mode='a', header=(i==0), index=False)
+
+        # Collect garbage every part to keep memory low on cloud environments
+        gc.collect()
+
         if i % 25 == 0:
-            print(f"Progress: {i}/{len(parts)}...")
-            gc.collect()
+            print(f"Progress: {i}/{len(parts)} | Memory available: {available_mb:.0f}MB")
 
     print(f"\n--- Process Complete ---")
     print(f"File Saved: {forecast_file}")
