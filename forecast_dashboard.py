@@ -294,6 +294,20 @@ with st.sidebar:
                         file_name=f.name,
                         key=f"sidebar_dl_{f.name}"
                     )
+            st.markdown("---")
+            if st.button("🗑️ Clear Output Files", use_container_width=True):
+                if st.session_state.get('confirm_clear_files'):
+                    for f in files:
+                        try:
+                            f.unlink()
+                        except Exception:
+                            pass
+                    st.session_state.confirm_clear_files = False
+                    st.success("Output files cleared!")
+                    st.rerun()
+                else:
+                    st.session_state.confirm_clear_files = True
+                    st.warning("Click again to confirm delete")
     else:
         st.info("No output folder yet")
 
@@ -322,36 +336,36 @@ tab1, tab2, tab3, tab4 = st.tabs([
 with tab1:
     st.header("📊 Overview")
 
-    # Quick stats
+    # Quick stats - derive from session state which persists within a session
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
         st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-        total_forecasts = len(st.session_state.forecast_history)
+        total_forecasts = len([h for h in st.session_state.forecast_history if h.get('type') == 'Forecast'])
         st.metric("Total Forecasts", total_forecasts)
         st.markdown('</div>', unsafe_allow_html=True)
 
     with col2:
         st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-        if st.session_state.forecast_history:
-            last_run = st.session_state.forecast_history[0]
-            st.metric("Last Run", last_run.get('date', 'N/A'))
+        forecast_runs = [h for h in st.session_state.forecast_history if h.get('type') == 'Forecast']
+        if forecast_runs:
+            last_run = forecast_runs[0]
+            st.metric("Last Run", last_run.get('date', 'N/A')[:10])
         else:
             st.metric("Last Run", "Never")
         st.markdown('</div>', unsafe_allow_html=True)
 
     with col3:
         st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-        # Bias correction report is always in the central output/ folder
-        bias_file = Path("output") / "forecast_accuracy_report.csv"
-        st.metric("Bias Correction", "Active ✅" if bias_file.exists() else "Inactive ⚠️")
+        bias_active = any(h.get('type') == 'Bias Update' and h.get('status') == 'success'
+                          for h in st.session_state.forecast_history)
+        st.metric("Bias Correction", "Active ✅" if bias_active else "Inactive ⚠️")
         st.markdown('</div>', unsafe_allow_html=True)
 
     with col4:
         st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-        output_folder = Path(st.session_state.settings.get('output_folder', 'output/'))
-        output_files = list(output_folder.glob("forecast_output*.csv")) if output_folder.exists() else []
-        st.metric("Output Files", len(output_files))
+        success_runs = len([h for h in st.session_state.forecast_history if h.get('status') == 'success'])
+        st.metric("Successful Runs", success_runs)
         st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown("---")
@@ -665,49 +679,39 @@ with tab2:
                                 f.write(correction_file.getbuffer())
                             st.info("🔧 Correction factors saved — bias correction will be applied automatically.")
 
-                        # Build command
-                        cmd = [
-                            sys.executable, "-m", "src.app",
-                            "--input", str(final_sales_path),
-                            "--horizon", str(horizon),
-                            "--agg", aggregation,
-                            "--outdir", str(output_folder_path),
-                            "--outfile", output_name
-                        ]
-
-                        # If using fixed Excel file, specify the sheet name
-                        if final_sales_path.suffix == '.xlsx' and final_sales_path != sales_path:
-                            cmd.extend(["--sheet-name", "Sales_Data"])
-
+                        # Save events file if uploaded
+                        events_path = None
                         if events_file:
                             events_path = input_folder / events_file.name
                             with open(events_path, 'wb') as f:
                                 f.write(events_file.getbuffer())
-                            cmd.extend(["--events-file", str(events_path)])
 
-                        if skip_plots:
-                            cmd.append("--skip-plots")
-
-                        if fast_mode:
-                            cmd.append("--fast-mode")
-
-                        # Run forecast
-                        result = subprocess.run(
-                            cmd,
-                            capture_output=True,
-                            text=True
+                        # Build args object and call run_forecast directly (avoids subprocess timeout)
+                        import types
+                        forecast_args = types.SimpleNamespace(
+                            input=str(final_sales_path),
+                            sheet_name="Sales_Data" if (final_sales_path.suffix == '.xlsx' and final_sales_path != sales_path) else None,
+                            date_format="%Y-%m-%d",
+                            agg=aggregation,
+                            horizon=horizon,
+                            outdir=str(output_folder_path),
+                            outfile=output_name,
+                            skip_plots=skip_plots,
+                            fast_mode=fast_mode,
+                            events_file=str(events_path) if events_path else None
                         )
 
-                        # Clean up temp folder
-                        shutil.rmtree(input_folder, ignore_errors=True)
+                        import io, contextlib
+                        log_buffer = io.StringIO()
+                        try:
+                            from src.app import run_forecast
+                            with contextlib.redirect_stdout(log_buffer):
+                                run_forecast(forecast_args)
+                            forecast_log = log_buffer.getvalue()
 
-                        if result.returncode == 0:
+                            shutil.rmtree(input_folder, ignore_errors=True)
                             st.success("✅ Forecast completed successfully!")
 
-                            # Get output folder from settings
-                            output_folder_path = Path(st.session_state.settings.get('output_folder', 'output/'))
-
-                            # Add to history
                             add_to_history({
                                 'type': 'Forecast',
                                 'date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
@@ -721,104 +725,62 @@ with tab2:
                                 }
                             })
 
-                            # Show output
                             with st.expander("📋 View Console Output", expanded=False):
-                                st.code(result.stdout, language="text")
+                                st.code(forecast_log, language="text")
 
-                            # Show download links
                             st.markdown("### 📥 Download Results")
-
                             output_dir = Path(st.session_state.settings.get('output_folder', 'output/'))
                             csv_file = output_dir / output_name
                             excel_file = output_dir / output_name.replace('.csv', '.xlsx')
                             corrected_csv = output_dir / output_name.replace('.csv', '_Corrected.csv')
                             corrected_excel = output_dir / output_name.replace('.csv', '_Corrected.xlsx')
 
-                            # Check if fixed file was saved
                             fixed_file_in_output = None
                             for f in output_dir.glob("*_FIXED.*"):
-                                if f.stat().st_mtime > (datetime.now().timestamp() - 300):  # Within last 5 minutes
+                                if f.stat().st_mtime > (datetime.now().timestamp() - 300):
                                     fixed_file_in_output = f
                                     break
 
-                            # Show fixed file download if it exists
                             if fixed_file_in_output:
                                 st.markdown("#### 🔧 Validated Data")
-                                col_fixed = st.columns(1)[0]
-                                with col_fixed:
-                                    st.download_button(
-                                        "⬇️ Download Fixed Sales Data",
-                                        data=open(fixed_file_in_output, 'rb').read(),
-                                        file_name=fixed_file_in_output.name,
-                                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" if fixed_file_in_output.suffix == '.xlsx' else "text/csv",
-                                        use_container_width=True
-                                    )
+                                st.download_button(
+                                    "⬇️ Download Fixed Sales Data",
+                                    data=open(fixed_file_in_output, 'rb').read(),
+                                    file_name=fixed_file_in_output.name,
+                                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" if fixed_file_in_output.suffix == '.xlsx' else "text/csv",
+                                    use_container_width=True
+                                )
                                 st.caption("💡 Use this cleaned file for future forecasts to skip validation")
 
                             st.markdown("#### 📊 Forecast Results")
-
                             col1, col2 = st.columns(2)
-
                             with col1:
                                 if csv_file.exists():
-                                    st.download_button(
-                                        "⬇️ Original Forecast (CSV)",
-                                        data=open(csv_file, 'rb').read(),
-                                        file_name=csv_file.name,
-                                        use_container_width=True
-                                    )
-
+                                    st.download_button("⬇️ Original Forecast (CSV)", data=open(csv_file, 'rb').read(), file_name=csv_file.name, use_container_width=True)
                                 if excel_file.exists():
-                                    st.download_button(
-                                        "⬇️ Original Forecast (Excel)",
-                                        data=open(excel_file, 'rb').read(),
-                                        file_name=excel_file.name,
-                                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                                        use_container_width=True
-                                    )
-
+                                    st.download_button("⬇️ Original Forecast (Excel)", data=open(excel_file, 'rb').read(), file_name=excel_file.name, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
                             with col2:
                                 if corrected_csv.exists():
-                                    st.download_button(
-                                        "⬇️ Corrected Forecast (CSV)",
-                                        data=open(corrected_csv, 'rb').read(),
-                                        file_name=corrected_csv.name,
-                                        use_container_width=True
-                                    )
-
+                                    st.download_button("⬇️ Corrected Forecast (CSV)", data=open(corrected_csv, 'rb').read(), file_name=corrected_csv.name, use_container_width=True)
                                 if corrected_excel.exists():
-                                    st.download_button(
-                                        "⬇️ Corrected Forecast (Excel) ⭐",
-                                        data=open(corrected_excel, 'rb').read(),
-                                        file_name=corrected_excel.name,
-                                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                                        use_container_width=True
-                                    )
+                                    st.download_button("⬇️ Corrected Forecast (Excel) ⭐", data=open(corrected_excel, 'rb').read(), file_name=corrected_excel.name, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
 
                             st.balloons()
 
-                        else:
-                            st.error("❌ Forecast failed!")
-
-                            # Add to history
+                        except Exception as e:
+                            shutil.rmtree(input_folder, ignore_errors=True)
+                            st.error(f"❌ Forecast failed: {str(e)}")
+                            with st.expander("❌ View Error Details", expanded=True):
+                                st.code(log_buffer.getvalue() + "\n" + str(e), language="text")
                             add_to_history({
                                 'type': 'Forecast',
                                 'date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                                 'status': 'error',
-                                'message': 'Forecast failed - see error details',
-                                'params': {
-                                    'horizon': horizon,
-                                    'aggregation': aggregation
-                                }
+                                'message': str(e)
                             })
-
-                            with st.expander("❌ View Error Details", expanded=True):
-                                st.code(result.stderr if result.stderr else result.stdout, language="text")
 
                     except Exception as e:
                         st.error(f"❌ Error running forecast: {str(e)}")
-
-                        # Add to history
                         add_to_history({
                             'type': 'Forecast',
                             'date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),

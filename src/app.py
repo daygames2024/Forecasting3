@@ -377,14 +377,6 @@ def forecast_with_model(series, model_name, horizon, events_df=None, last_q=None
     try:
         event_names = None
 
-        # Skip heavy models when memory is low (Streamlit Cloud has 1GB limit)
-        heavy_models = ["auto_arima", "prophet", "sarimax", "xgboost", "lightgbm"]
-        if model_name in heavy_models:
-            available_mb = psutil.virtual_memory().available / (1024 * 1024)
-            if available_mb < 300:
-                print(f"[WARN] Skipping {model_name} - low memory ({available_mb:.0f}MB)")
-                return None, None
-
         if model_name == "holt_winters":
             result = ExponentialSmoothing(series, trend="add", seasonal=None).fit().forecast(horizon)
             fc = result.clip(lower=0).tolist() if hasattr(result, 'clip') else [max(0, x) for x in result]
@@ -520,7 +512,7 @@ def process_single_part(part, group, args, plots_dir, last_q, events_df=None):
             if LIGHTGBM_AVAILABLE:
                 candidate_models.append("lightgbm")
 
-        if psutil.virtual_memory().percent < 75 and len(series_q) > 8:
+        if psutil.virtual_memory().percent < 85 and len(series_q) > 8:
             candidate_models += ["auto_arima", "prophet"]
 
     # Collect all valid candidates with gating
@@ -749,7 +741,10 @@ def main():
     p.add_argument("--fast-mode", action="store_true")
     p.add_argument("--events-file", default=None, help="CSV file with maintenance events (columns: Check, Start Date, End Date)")
     args = p.parse_args()
+    run_forecast(args)
 
+
+def run_forecast(args):
     # Load local modules
     from .io_loader import load_sales_daily
     from .aggregator import daily_to_quarterly
@@ -782,9 +777,9 @@ def main():
     print(f"[INFO] Processing {len(parts)} parts...")
 
     for i, part in enumerate(parts):
-        # Check available memory before each part - skip heavy models if low
+        # Check available memory and force GC if needed
         available_mb = psutil.virtual_memory().available / (1024 * 1024)
-        if available_mb < 200:
+        if available_mb < 150:
             print(f"[WARN] Low memory ({available_mb:.0f}MB) at part {i} - forcing garbage collection")
             gc.collect()
 
@@ -793,8 +788,9 @@ def main():
 
         pd.DataFrame([res]).to_csv(forecast_file, mode='a', header=(i==0), index=False)
 
-        # Collect garbage every part to keep memory low on cloud environments
-        gc.collect()
+        # Collect garbage every 10 parts to keep memory stable
+        if i % 10 == 0:
+            gc.collect()
 
         if i % 25 == 0:
             print(f"Progress: {i}/{len(parts)} | Memory available: {available_mb:.0f}MB")
