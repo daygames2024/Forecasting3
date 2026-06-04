@@ -14,6 +14,7 @@ import os
 import sys
 import subprocess
 import json
+import threading
 from pathlib import Path
 from datetime import datetime
 import shutil
@@ -119,6 +120,24 @@ if 'forecast_history' not in st.session_state:
 
 if 'last_run_status' not in st.session_state:
     st.session_state.last_run_status = None
+
+if 'forecast_running' not in st.session_state:
+    st.session_state.forecast_running = False
+
+if 'forecast_done' not in st.session_state:
+    st.session_state.forecast_done = False
+
+if 'forecast_error' not in st.session_state:
+    st.session_state.forecast_error = None
+
+if 'forecast_log' not in st.session_state:
+    st.session_state.forecast_log = ""
+
+if 'forecast_output_dir' not in st.session_state:
+    st.session_state.forecast_output_dir = None
+
+if 'forecast_output_name' not in st.session_state:
+    st.session_state.forecast_output_name = None
 
 # Initialize settings with defaults
 if 'settings' not in st.session_state:
@@ -675,14 +694,19 @@ with tab2:
                             shutil.rmtree(input_folder, ignore_errors=True)
                             st.stop()
 
-                        # STEP 2: Run forecast with validated data
+                        # STEP 2: Run forecast in background thread
                         st.info("📊 Step 2/2: Running forecast models...")
 
                         # Get output folder from settings
                         output_folder_path = Path(st.session_state.settings.get('output_folder', 'output/'))
                         output_folder_path.mkdir(parents=True, exist_ok=True)
 
-                        # Save correction factors to output folder if uploaded
+                        # Delete any existing output file to prevent append issues
+                        existing_out = output_folder_path / output_name
+                        if existing_out.exists():
+                            existing_out.unlink()
+
+                        # Save correction factors if uploaded
                         if correction_file:
                             correction_path = output_folder_path / "correction_factors.csv"
                             with open(correction_path, 'wb') as f:
@@ -696,8 +720,7 @@ with tab2:
                             with open(events_path, 'wb') as f:
                                 f.write(events_file.getbuffer())
 
-                        # Build args object and call run_forecast directly (avoids subprocess timeout)
-                        import types
+                        import types, io, contextlib
                         forecast_args = types.SimpleNamespace(
                             input=str(final_sales_path),
                             sheet_name="Sales_Data" if (final_sales_path.suffix == '.xlsx' and final_sales_path != sales_path) else None,
@@ -711,83 +734,35 @@ with tab2:
                             events_file=str(events_path) if events_path else None
                         )
 
-                        import io, contextlib
-                        log_buffer = io.StringIO()
-                        try:
-                            from src.app import run_forecast
-                            with contextlib.redirect_stdout(log_buffer):
-                                run_forecast(forecast_args)
-                            forecast_log = log_buffer.getvalue()
+                        # Run in background thread so Streamlit UI stays alive
+                        from src.app import run_forecast
 
-                            shutil.rmtree(input_folder, ignore_errors=True)
-                            st.success("✅ Forecast completed successfully!")
+                        def run_in_thread(args, out_dir):
+                            log_buf = io.StringIO()
+                            try:
+                                with contextlib.redirect_stdout(log_buf):
+                                    run_forecast(args)
+                                st.session_state.forecast_log = log_buf.getvalue()
+                                st.session_state.forecast_done = True
+                                st.session_state.forecast_error = None
+                            except Exception as ex:
+                                st.session_state.forecast_log = log_buf.getvalue()
+                                st.session_state.forecast_error = str(ex)
+                                st.session_state.forecast_done = True
+                            finally:
+                                st.session_state.forecast_running = False
+                                shutil.rmtree(Path("temp_input"), ignore_errors=True)
 
-                            add_to_history({
-                                'type': 'Forecast',
-                                'date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                                'status': 'success',
-                                'message': f'{sales_file.name} processed',
-                                'output_file': str(output_folder_path / output_name),
-                                'params': {
-                                    'horizon': horizon,
-                                    'aggregation': aggregation,
-                                    'events': events_file.name if events_file else None
-                                }
-                            })
+                        st.session_state.forecast_running = True
+                        st.session_state.forecast_done = False
+                        st.session_state.forecast_error = None
+                        st.session_state.forecast_log = ""
+                        st.session_state.forecast_output_dir = str(output_folder_path)
+                        st.session_state.forecast_output_name = output_name
 
-                            with st.expander("📋 View Console Output", expanded=False):
-                                st.code(forecast_log, language="text")
-
-                            st.markdown("### 📥 Download Results")
-                            output_dir = Path(st.session_state.settings.get('output_folder', 'output/'))
-                            csv_file = output_dir / output_name
-                            excel_file = output_dir / output_name.replace('.csv', '.xlsx')
-                            corrected_csv = output_dir / output_name.replace('.csv', '_Corrected.csv')
-                            corrected_excel = output_dir / output_name.replace('.csv', '_Corrected.xlsx')
-
-                            fixed_file_in_output = None
-                            for f in output_dir.glob("*_FIXED.*"):
-                                if f.stat().st_mtime > (datetime.now().timestamp() - 300):
-                                    fixed_file_in_output = f
-                                    break
-
-                            if fixed_file_in_output:
-                                st.markdown("#### 🔧 Validated Data")
-                                st.download_button(
-                                    "⬇️ Download Fixed Sales Data",
-                                    data=open(fixed_file_in_output, 'rb').read(),
-                                    file_name=fixed_file_in_output.name,
-                                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" if fixed_file_in_output.suffix == '.xlsx' else "text/csv",
-                                    use_container_width=True
-                                )
-                                st.caption("💡 Use this cleaned file for future forecasts to skip validation")
-
-                            st.markdown("#### 📊 Forecast Results")
-                            col1, col2 = st.columns(2)
-                            with col1:
-                                if csv_file.exists():
-                                    st.download_button("⬇️ Original Forecast (CSV)", data=open(csv_file, 'rb').read(), file_name=csv_file.name, use_container_width=True)
-                                if excel_file.exists():
-                                    st.download_button("⬇️ Original Forecast (Excel)", data=open(excel_file, 'rb').read(), file_name=excel_file.name, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
-                            with col2:
-                                if corrected_csv.exists():
-                                    st.download_button("⬇️ Corrected Forecast (CSV)", data=open(corrected_csv, 'rb').read(), file_name=corrected_csv.name, use_container_width=True)
-                                if corrected_excel.exists():
-                                    st.download_button("⬇️ Corrected Forecast (Excel) ⭐", data=open(corrected_excel, 'rb').read(), file_name=corrected_excel.name, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
-
-                            st.balloons()
-
-                        except Exception as e:
-                            shutil.rmtree(input_folder, ignore_errors=True)
-                            st.error(f"❌ Forecast failed: {str(e)}")
-                            with st.expander("❌ View Error Details", expanded=True):
-                                st.code(log_buffer.getvalue() + "\n" + str(e), language="text")
-                            add_to_history({
-                                'type': 'Forecast',
-                                'date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                                'status': 'error',
-                                'message': str(e)
-                            })
+                        t = threading.Thread(target=run_in_thread, args=(forecast_args, output_folder_path), daemon=True)
+                        t.start()
+                        st.rerun()
 
                     except Exception as e:
                         st.error(f"❌ Error running forecast: {str(e)}")
@@ -797,6 +772,68 @@ with tab2:
                             'status': 'error',
                             'message': str(e)
                         })
+
+# Show forecast progress / results if a run is in progress or just completed
+if st.session_state.get('forecast_running') or st.session_state.get('forecast_done'):
+    with tab2:
+        st.markdown("---")
+        output_dir = Path(st.session_state.get('forecast_output_dir', 'output/'))
+        output_name = st.session_state.get('forecast_output_name', 'forecast_output.csv')
+        csv_file = output_dir / output_name
+
+        if st.session_state.forecast_running:
+            parts_done = 0
+            if csv_file.exists():
+                try:
+                    parts_done = sum(1 for _ in open(csv_file)) - 1
+                except Exception:
+                    parts_done = 0
+            st.info(f"⏳ Forecast running... {parts_done} parts completed so far. Page will update automatically.")
+            import time
+            time.sleep(3)
+            st.rerun()
+
+        elif st.session_state.forecast_done:
+            if st.session_state.forecast_error:
+                st.error(f"❌ Forecast failed: {st.session_state.forecast_error}")
+                with st.expander("❌ View Error Details", expanded=True):
+                    st.code(st.session_state.forecast_log, language="text")
+                add_to_history({
+                    'type': 'Forecast',
+                    'date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    'status': 'error',
+                    'message': st.session_state.forecast_error
+                })
+            else:
+                st.success("✅ Forecast completed successfully!")
+                add_to_history({
+                    'type': 'Forecast',
+                    'date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    'status': 'success',
+                    'message': 'Forecast completed',
+                    'output_file': str(csv_file),
+                })
+                with st.expander("📋 View Console Output", expanded=False):
+                    st.code(st.session_state.forecast_log, language="text")
+
+                st.markdown("### 📥 Download Results")
+                excel_file = output_dir / output_name.replace('.csv', '.xlsx')
+                corrected_csv = output_dir / output_name.replace('.csv', '_Corrected.csv')
+                corrected_excel = output_dir / output_name.replace('.csv', '_Corrected.xlsx')
+
+                col1, col2 = st.columns(2)
+                with col1:
+                    if csv_file.exists():
+                        st.download_button("⬇️ Original Forecast (CSV)", data=open(csv_file, 'rb').read(), file_name=csv_file.name, use_container_width=True, key="dl_csv_done")
+                    if excel_file.exists():
+                        st.download_button("⬇️ Original Forecast (Excel)", data=open(excel_file, 'rb').read(), file_name=excel_file.name, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True, key="dl_excel_done")
+                with col2:
+                    if corrected_csv.exists():
+                        st.download_button("⬇️ Corrected Forecast (CSV)", data=open(corrected_csv, 'rb').read(), file_name=corrected_csv.name, use_container_width=True, key="dl_corr_csv_done")
+                    if corrected_excel.exists():
+                        st.download_button("⬇️ Corrected Forecast (Excel) ⭐", data=open(corrected_excel, 'rb').read(), file_name=corrected_excel.name, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True, key="dl_corr_excel_done")
+
+            st.session_state.forecast_done = False
 
 # ============================================================================
 # TAB 3: UPDATE BIAS CORRECTION
