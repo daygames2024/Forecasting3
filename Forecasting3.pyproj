@@ -24,6 +24,7 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="app.py" />
     <Compile Include="check_duplicates.py" />
     <Compile Include="Forecasting3.py" />
     <Compile Include="forecast_dashboard.py" />
@@ -62,6 +63,7 @@
     <Compile Include="validate_simple.py" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include=".streamlit\" />
     <Folder Include="configs\" />
     <Folder Include="tests\" />
     <Folder Include="outputs\" />
@@ -72,6 +74,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include=".gitignore" />
+    <Content Include=".streamlit\config.toml" />
     <Content Include="BIAS_CORRECTION_LOCATION.md" />
     <Content Include="CHANGELOG.md" />
     <Content Include="CONFIDENCE_INTERVALS_GUIDE.md" />
