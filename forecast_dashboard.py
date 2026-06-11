@@ -790,7 +790,7 @@ if st.session_state.get('forecast_running') or st.session_state.get('forecast_do
                     parts_done = 0
             st.info(f"⏳ Forecast running... {parts_done} parts completed so far. Page will update automatically.")
             import time
-            time.sleep(3)
+            time.sleep(4)
             st.rerun()
 
         elif st.session_state.forecast_done:
@@ -823,17 +823,25 @@ if st.session_state.get('forecast_running') or st.session_state.get('forecast_do
 
                 col1, col2 = st.columns(2)
                 with col1:
+                    st.markdown("**Original Forecast**")
                     if csv_file.exists():
-                        st.download_button("⬇️ Original Forecast (CSV)", data=open(csv_file, 'rb').read(), file_name=csv_file.name, use_container_width=True, key="dl_csv_done")
+                        st.download_button("⬇️ CSV", data=open(csv_file, 'rb').read(), file_name=csv_file.name, use_container_width=True, key="dl_csv_done")
                     if excel_file.exists():
-                        st.download_button("⬇️ Original Forecast (Excel)", data=open(excel_file, 'rb').read(), file_name=excel_file.name, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True, key="dl_excel_done")
+                        st.download_button("⬇️ Excel", data=open(excel_file, 'rb').read(), file_name=excel_file.name, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True, key="dl_excel_done")
                 with col2:
+                    st.markdown("**Bias Corrected Forecast**")
                     if corrected_csv.exists():
-                        st.download_button("⬇️ Corrected Forecast (CSV)", data=open(corrected_csv, 'rb').read(), file_name=corrected_csv.name, use_container_width=True, key="dl_corr_csv_done")
+                        st.download_button("⬇️ CSV", data=open(corrected_csv, 'rb').read(), file_name=corrected_csv.name, use_container_width=True, key="dl_corr_csv_done")
                     if corrected_excel.exists():
-                        st.download_button("⬇️ Corrected Forecast (Excel) ⭐", data=open(corrected_excel, 'rb').read(), file_name=corrected_excel.name, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True, key="dl_corr_excel_done")
+                        st.download_button("⬇️ Excel ⭐", data=open(corrected_excel, 'rb').read(), file_name=corrected_excel.name, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True, key="dl_corr_excel_done")
+                    if not corrected_csv.exists() and not corrected_excel.exists():
+                        st.warning("⚠️ No corrected forecast generated. Upload a `correction_factors.csv` or `forecast_accuracy_report.csv` in the Create Forecast tab to enable bias correction.")
 
-            st.session_state.forecast_done = False
+            if st.button("🔄 Run Another Forecast", use_container_width=True):
+                st.session_state.forecast_done = False
+                st.session_state.forecast_log = ""
+                st.session_state.forecast_error = None
+                st.rerun()
 
 # ============================================================================
 # TAB 3: UPDATE BIAS CORRECTION

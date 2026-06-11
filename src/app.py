@@ -957,9 +957,12 @@ def run_forecast(args):
 
 
     # ==================== BIAS CORRECTION (Model-Demand Alignment Fix) ====================
-    # Auto-apply statistical corrections if accuracy report exists
-    # Always look in the central 'output' folder, regardless of custom forecast output location
-    accuracy_report = Path("output") / "forecast_accuracy_report.csv"
+    # Auto-apply bias correction if accuracy report or correction factors exist
+    accuracy_report = Path(args.outdir) / "forecast_accuracy_report.csv"
+    if not accuracy_report.exists():
+        accuracy_report = Path("output") / "forecast_accuracy_report.csv"
+
+    correction_factors_file = Path(args.outdir) / "correction_factors.csv"
 
     if accuracy_report.exists():
         print("\n" + "="*70)
